@@ -2,6 +2,9 @@ export const FINNHUB_API_KEY = import.meta.env.VITE_FINNHUB_API_KEY as string;
 export const FINNHUB_BASE_URL = 'https://finnhub.io/api/v1';
 export const FINNHUB_WS_URL = `wss://ws.finnhub.io?token=${FINNHUB_API_KEY}`;
 
+export const ALPHA_VANTAGE_API_KEY = import.meta.env.VITE_ALPHA_VANTAGE_API_KEY as string;
+export const ALPHA_VANTAGE_BASE_URL = 'https://www.alphavantage.co/query';
+
 /** REST 폴링 주기 (ms) — WebSocket 단절 시 백업용 */
 export const POLLING_INTERVAL = 5000;
 

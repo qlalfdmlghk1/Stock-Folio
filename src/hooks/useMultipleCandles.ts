@@ -26,7 +26,7 @@ export function useMultipleCandles(symbols: string[], market: Market) {
   return useMemo(() => {
     return limited.reduce<Record<string, CandlestickData[]>>((acc, symbol, i) => {
       if (queries[i].data) {
-        acc[symbol] = queries[i].data!;
+        acc[symbol] = queries[i].data!.candles;
       }
       return acc;
     }, {});

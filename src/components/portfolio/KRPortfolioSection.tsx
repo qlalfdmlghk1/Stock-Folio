@@ -7,6 +7,7 @@ import PortfolioTable from './PortfolioTable';
 import PieChart from '../charts/PieChart';
 import LineChart from '../charts/LineChart';
 import CandlestickChart from '../charts/CandlestickChart';
+import AppSelect from '../ui/AppSelect/AppSelect';
 
 /**
  * 한국 주식 포트폴리오 섹션
@@ -93,18 +94,17 @@ export default function KRPortfolioSection({
           <div className="rounded-xl border border-gray-800 bg-gray-900 p-4">
             <div className="mb-3 flex items-center gap-3">
               <h3 className="text-sm font-medium text-gray-400">종목 일봉 차트</h3>
-              <select
-                value={selectedSymbol}
-                onChange={(e) => setSelectedSymbol(e.target.value)}
-                className="rounded-md border border-gray-700 bg-gray-800 px-3 py-1.5 text-sm text-gray-200"
-              >
-                <option value="">종목 선택</option>
-                {stocks.map((s) => (
-                  <option key={s.id} value={s.symbol}>
-                    {s.name} ({s.symbol})
-                  </option>
-                ))}
-              </select>
+              <AppSelect
+                options={stocks.map((s) => ({
+                  value: s.symbol,
+                  label: `${s.name} (${s.symbol})`,
+                }))}
+                value={selectedSymbol || undefined}
+                onChange={(val) => setSelectedSymbol(val as string)}
+                placeholder="종목 선택"
+                size="sm"
+                width="50%"
+              />
             </div>
             {selectedSymbol && candleData.length > 0 ? (
               <CandlestickChart

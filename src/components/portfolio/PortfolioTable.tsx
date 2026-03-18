@@ -52,6 +52,16 @@ const PortfolioTable = memo(function PortfolioTable({
     };
   }, [stocks, priceMap]);
 
+  // [성능] useMemo — 개별 행의 수익률/손익 계산을 가격 변경 시에만 수행
+  const rowData = useMemo(() => {
+    return stocks.map((stock) => {
+      const currentPrice = priceMap[stock.symbol] ?? stock.avgPrice;
+      const profitLoss = calcProfitLoss(currentPrice, stock.avgPrice, stock.quantity);
+      const returnRate = calcReturnRate(currentPrice, stock.avgPrice);
+      return { stock, currentPrice, profitLoss, returnRate, isProfit: profitLoss >= 0 };
+    });
+  }, [stocks, priceMap]);
+
   if (stocks.length === 0) {
     return (
       <div className="rounded-xl border border-gray-800 bg-gray-900 p-12 text-center">
@@ -98,11 +108,8 @@ const PortfolioTable = memo(function PortfolioTable({
             </tr>
           </thead>
           <tbody>
-            {stocks.map((stock) => {
-              const currentPrice = priceMap[stock.symbol] ?? stock.avgPrice;
-              const profitLoss = calcProfitLoss(currentPrice, stock.avgPrice, stock.quantity);
-              const returnRate = calcReturnRate(currentPrice, stock.avgPrice);
-              const isProfit = profitLoss >= 0;
+            {/* [성능] useMemo로 미리 계산된 행 데이터 사용 — 가격 변경 시에만 재계산 */}
+            {rowData.map(({ stock, currentPrice, profitLoss, returnRate, isProfit }) => {
 
               return (
                 <tr

@@ -6,6 +6,8 @@ import USPortfolioSection from '@/components/portfolio/USPortfolioSection';
 import KRPortfolioSection from '@/components/portfolio/KRPortfolioSection';
 import TabButton from '@/components/ui/TabButton';
 import MarketStatusIndicator from '@/components/ui/MarketStatusIndicator';
+import ErrorBoundary from '@/components/ui/ErrorBoundary';
+import OfflineBanner from '@/components/ui/OfflineBanner';
 
 function App() {
   const [activeMarket, setActiveMarket] = useState<Market>('US');
@@ -66,6 +68,9 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">
+      {/* 네트워크 오프라인 배너 */}
+      <OfflineBanner />
+
       {/* 헤더 */}
       <header className="border-b border-gray-800 px-6 py-4">
         <div className="mx-auto flex max-w-4xl items-center justify-between">
@@ -117,20 +122,22 @@ function App() {
           </div>
         )}
 
-        {/* 포트폴리오 섹션 */}
-        {activeMarket === 'US' ? (
-          <USPortfolioSection
-            stocks={stocks}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
-        ) : (
-          <KRPortfolioSection
-            stocks={stocks}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
-        )}
+        {/* [의사결정] 포트폴리오 섹션을 ErrorBoundary로 격리 — 차트/데이터 에러가 앱 전체를 중단시키지 않도록 */}
+        <ErrorBoundary>
+          {activeMarket === 'US' ? (
+            <USPortfolioSection
+              stocks={stocks}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
+          ) : (
+            <KRPortfolioSection
+              stocks={stocks}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
+          )}
+        </ErrorBoundary>
       </main>
     </div>
   );

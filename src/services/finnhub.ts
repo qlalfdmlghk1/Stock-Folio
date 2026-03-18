@@ -69,6 +69,7 @@ export function generateUsMockCandles(
 export async function fetchQuote(symbol: string): Promise<StockQuote> {
   const url = `${FINNHUB_BASE_URL}/quote?symbol=${encodeURIComponent(symbol)}&token=${FINNHUB_API_KEY}`;
 
+  // [의사결정] AbortController로 10초 타임아웃 — 무한 대기 방지
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10_000);
 
@@ -97,6 +98,12 @@ export async function fetchQuote(symbol: string): Promise<StockQuote> {
       previousClose: data.pc,
       timestamp: data.t,
     };
+  } catch (err) {
+    // [예외처리] AbortError를 사용자 친화적 타임아웃 메시지로 변환
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw new Error(`"${symbol}" 시세 조회 응답 시간 초과 (10초)`);
+    }
+    throw err;
   } finally {
     clearTimeout(timeout);
   }
@@ -139,6 +146,11 @@ export async function fetchCandles(
       low: data.l[i],
       volume: data.v[i],
     }));
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw new Error(`"${symbol}" 일봉 데이터 조회 응답 시간 초과 (10초)`);
+    }
+    throw err;
   } finally {
     clearTimeout(timeout);
   }

@@ -62,6 +62,11 @@ export async function fetchAlphaVantageCandles(
 
     // 요청한 일수만큼만 반환
     return candles.slice(-days);
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw new Error(`"${symbol}" Alpha Vantage 일봉 조회 응답 시간 초과 (10초)`);
+    }
+    throw err;
   } finally {
     clearTimeout(timeout);
   }

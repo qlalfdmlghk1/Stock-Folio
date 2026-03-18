@@ -8,6 +8,8 @@ import PieChart from '@/components/charts/PieChart';
 import LineChart from '@/components/charts/LineChart';
 import CandlestickChart from '@/components/charts/CandlestickChart';
 import AppSelect from '@/components/ui/AppSelect/AppSelect';
+import ErrorBoundary from '@/components/ui/ErrorBoundary';
+import StockSummary from '@/components/ui/StockSummary';
 
 /**
  * 한국 주식 포트폴리오 섹션
@@ -87,8 +89,12 @@ export default function KRPortfolioSection({
       {stocks.length > 0 && (
         <div className="mt-6 space-y-6">
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <PieChart data={pieData} market="KR" />
-            <LineChart data={lineData} market="KR" />
+            <ErrorBoundary>
+              <PieChart data={pieData} market="KR" />
+            </ErrorBoundary>
+            <ErrorBoundary>
+              <LineChart data={lineData} market="KR" />
+            </ErrorBoundary>
           </div>
 
           <div className="rounded-xl border border-gray-800 bg-gray-900 p-4">
@@ -106,17 +112,25 @@ export default function KRPortfolioSection({
                 width="50%"
               />
             </div>
-            {selectedSymbol && candleData.length > 0 ? (
-              <CandlestickChart
-                data={candleData}
-                symbol={selectedStock?.name ? `${selectedStock.name} (${selectedSymbol})` : selectedSymbol}
-                market="KR"
-              />
-            ) : (
-              <div className="flex h-64 items-center justify-center">
-                <p className="text-sm text-gray-500">종목을 선택하면 일봉 차트가 표시됩니다.</p>
-              </div>
-            )}
+            <ErrorBoundary>
+              {selectedSymbol && candleData.length > 0 ? (
+                <>
+                  <CandlestickChart
+                    data={candleData}
+                    symbol={selectedStock?.name ? `${selectedStock.name} (${selectedSymbol})` : selectedSymbol}
+                    market="KR"
+                  />
+                  {/* [의사결정] AI 종목 요약 — 캔들스틱 차트 아래에 Gemini 기반 동향 요약 표시 */}
+                  {selectedStock && (
+                    <StockSummary symbol={selectedSymbol} name={selectedStock.name} market="KR" />
+                  )}
+                </>
+              ) : (
+                <div className="flex h-64 items-center justify-center">
+                  <p className="text-sm text-gray-500">종목을 선택하면 일봉 차트가 표시됩니다.</p>
+                </div>
+              )}
+            </ErrorBoundary>
           </div>
         </div>
       )}

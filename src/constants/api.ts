@@ -13,3 +13,10 @@ export const DEFAULT_CANDLE_DAYS = 90;
 
 /** 캔들 데이터 캐시 유지 시간 (ms) — 일봉은 자주 변하지 않으므로 5분 */
 export const CANDLE_STALE_TIME = 5 * 60 * 1000;
+
+// Gemini API — 종목 요약 기능용
+export const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY as string;
+export const GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta';
+
+/** 종목 요약 캐시 유지 시간 (ms) — 동향 요약은 10분간 유효 */
+export const SUMMARY_STALE_TIME = 10 * 60 * 1000;

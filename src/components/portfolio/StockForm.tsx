@@ -1,8 +1,16 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import type { PortfolioStock, StockFormData, Market } from '@/types/stock';
 import { getAvailableKrxSymbols } from '@/services/mockKrx';
 import { AppSelect } from '@/components/ui/AppSelect';
 import type { SelectOption, SelectValue } from '@/components/ui/AppSelect/AppSelect.type';
+
+/** 필드별 인라인 에러 타입 */
+interface FieldErrors {
+  symbol?: string;
+  name?: string;
+  quantity?: string;
+  avgPrice?: string;
+}
 
 interface StockFormProps {
   market: Market;
@@ -27,6 +35,8 @@ export default function StockForm({
   const [quantity, setQuantity] = useState(editingStock?.quantity.toString() ?? '');
   const [avgPrice, setAvgPrice] = useState(editingStock?.avgPrice.toString() ?? '');
   const [error, setError] = useState('');
+  // [예외처리] 필드별 인라인 에러 — 어떤 필드가 잘못되었는지 즉각 피드백
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
   const krxSymbols = getAvailableKrxSymbols();
   const isEdit = !!editingStock;
@@ -39,34 +49,56 @@ export default function StockForm({
   function handleKrxSelect(value: SelectValue | SelectValue[]) {
     const selectedSymbol = value as string;
     setSymbol(selectedSymbol);
+    setFieldErrors((prev) => ({ ...prev, symbol: undefined }));
     const found = krxSymbols.find((s) => s.symbol === selectedSymbol);
     if (found) setName(found.name);
+  }
+
+  /** [예외처리] 종목 코드 유효성 — 영문 대문자 1~5자리 (미국 주식 티커 형식) */
+  const validateSymbol = useCallback((value: string): string | undefined => {
+    if (!value.trim()) return '종목 코드를 입력하세요.';
+    if (market === 'US' && !/^[A-Za-z]{1,5}$/.test(value.trim())) {
+      return '미국 주식 심볼은 영문 1~5자리입니다. (예: AAPL, MSFT)';
+    }
+    return undefined;
+  }, [market]);
+
+  /** 심볼 입력 변경 핸들러 — 입력 시 즉각 인라인 피드백 */
+  function handleSymbolChange(value: string) {
+    setSymbol(value);
+    const err = validateSymbol(value);
+    setFieldErrors((prev) => ({ ...prev, symbol: err }));
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+    const errors: FieldErrors = {};
 
-    // 유효성 검사
-    if (!symbol.trim()) {
-      setError('종목 코드를 입력하세요.');
-      return;
+    // [예외처리] 필드별 유효성 검사 — 모든 에러를 한 번에 표시
+    if (market === 'US') {
+      const symbolErr = validateSymbol(symbol);
+      if (symbolErr) errors.symbol = symbolErr;
+      if (!name.trim()) errors.name = '종목명을 입력하세요.';
+    } else {
+      if (!symbol.trim()) errors.symbol = '종목을 선택하세요.';
     }
-    if (!name.trim()) {
-      setError('종목명을 입력하세요.');
-      return;
-    }
+
     const qty = Number(quantity);
     if (!quantity || qty <= 0 || !Number.isInteger(qty)) {
-      setError('수량은 1 이상의 정수를 입력하세요.');
-      return;
+      errors.quantity = '수량은 1 이상의 정수를 입력하세요.';
     }
     const price = Number(avgPrice);
     if (!avgPrice || price <= 0) {
-      setError('매입가는 0보다 큰 값을 입력하세요.');
+      errors.avgPrice = '매입가는 0보다 큰 값을 입력하세요.';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
       return;
     }
 
+    setFieldErrors({});
     onSubmit({
       symbol: symbol.trim().toUpperCase(),
       name: name.trim(),
@@ -94,7 +126,11 @@ export default function StockForm({
               disabled={isEdit}
               placeholder="선택하세요"
               fullWidth
+              state={fieldErrors.symbol ? 'error' : 'default'}
             />
+            {fieldErrors.symbol && (
+              <p className="mt-1 text-xs text-red-400">{fieldErrors.symbol}</p>
+            )}
           </div>
         ) : (
           <>
@@ -103,21 +139,34 @@ export default function StockForm({
               <input
                 type="text"
                 value={symbol}
-                onChange={(e) => setSymbol(e.target.value)}
+                onChange={(e) => handleSymbolChange(e.target.value)}
                 placeholder="예: AAPL, MSFT, GOOGL"
                 disabled={isEdit}
-                className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-gray-100 uppercase placeholder:text-gray-600 outline-none focus:border-blue-500 disabled:opacity-50"
+                className={`w-full rounded-lg border bg-gray-800 px-4 py-2.5 text-gray-100 uppercase placeholder:text-gray-600 outline-none focus:border-blue-500 disabled:opacity-50 ${
+                  fieldErrors.symbol ? 'border-red-500' : 'border-gray-700'
+                }`}
               />
+              {fieldErrors.symbol && (
+                <p className="mt-1 text-xs text-red-400">{fieldErrors.symbol}</p>
+              )}
             </div>
             <div>
               <label className="mb-1 block text-sm text-gray-400">종목명</label>
               <input
                 type="text"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  setFieldErrors((prev) => ({ ...prev, name: undefined }));
+                }}
                 placeholder="예: Apple Inc."
-                className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-gray-100 placeholder:text-gray-600 outline-none focus:border-blue-500"
+                className={`w-full rounded-lg border bg-gray-800 px-4 py-2.5 text-gray-100 placeholder:text-gray-600 outline-none focus:border-blue-500 ${
+                  fieldErrors.name ? 'border-red-500' : 'border-gray-700'
+                }`}
               />
+              {fieldErrors.name && (
+                <p className="mt-1 text-xs text-red-400">{fieldErrors.name}</p>
+              )}
             </div>
           </>
         )}
@@ -128,12 +177,20 @@ export default function StockForm({
           <input
             type="number"
             value={quantity}
-            onChange={(e) => setQuantity(e.target.value)}
+            onChange={(e) => {
+              setQuantity(e.target.value);
+              setFieldErrors((prev) => ({ ...prev, quantity: undefined }));
+            }}
             placeholder="0"
             min="1"
             step="1"
-            className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-gray-100 placeholder:text-gray-600 outline-none focus:border-blue-500"
+            className={`w-full rounded-lg border bg-gray-800 px-4 py-2.5 text-gray-100 placeholder:text-gray-600 outline-none focus:border-blue-500 ${
+              fieldErrors.quantity ? 'border-red-500' : 'border-gray-700'
+            }`}
           />
+          {fieldErrors.quantity && (
+            <p className="mt-1 text-xs text-red-400">{fieldErrors.quantity}</p>
+          )}
         </div>
 
         {/* 매입가 */}
@@ -144,12 +201,20 @@ export default function StockForm({
           <input
             type="number"
             value={avgPrice}
-            onChange={(e) => setAvgPrice(e.target.value)}
+            onChange={(e) => {
+              setAvgPrice(e.target.value);
+              setFieldErrors((prev) => ({ ...prev, avgPrice: undefined }));
+            }}
             placeholder="0"
             min="0"
             step={market === 'US' ? '0.01' : '1'}
-            className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-gray-100 placeholder:text-gray-600 outline-none focus:border-blue-500"
+            className={`w-full rounded-lg border bg-gray-800 px-4 py-2.5 text-gray-100 placeholder:text-gray-600 outline-none focus:border-blue-500 ${
+              fieldErrors.avgPrice ? 'border-red-500' : 'border-gray-700'
+            }`}
           />
+          {fieldErrors.avgPrice && (
+            <p className="mt-1 text-xs text-red-400">{fieldErrors.avgPrice}</p>
+          )}
         </div>
 
         {/* 에러 메시지 */}

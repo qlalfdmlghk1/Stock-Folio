@@ -1,4 +1,4 @@
-import type { PortfolioStock, CandlestickData, LineChartPoint } from '../types/stock';
+import type { PortfolioStock, CandlestickData, LineChartPoint } from '@/types/stock';
 import { calcMarketValue, calcTotalCost, calcPortfolioReturnRate } from './calculator';
 
 /**

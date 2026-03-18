@@ -1,13 +1,13 @@
 import { useState, useMemo } from 'react';
-import type { PortfolioStock, PieChartItem, LineChartPoint, CandlestickData } from '../../types/stock';
-import { fetchKrxMockQuote, isKrxMarketOpen, generateKrxMockCandles } from '../../services/mockKrx';
-import { calcMarketValue } from '../../utils/calculator';
-import { buildPortfolioHistoryFromMap } from '../../utils/portfolioHistory';
-import PortfolioTable from './PortfolioTable';
-import PieChart from '../charts/PieChart';
-import LineChart from '../charts/LineChart';
-import CandlestickChart from '../charts/CandlestickChart';
-import AppSelect from '../ui/AppSelect/AppSelect';
+import type { PortfolioStock, PieChartItem, LineChartPoint, CandlestickData } from '@/types/stock';
+import { fetchKrxMockQuote, isKrxMarketOpen, generateKrxMockCandles } from '@/services/mockKrx';
+import { calcMarketValue } from '@/utils/calculator';
+import { buildPortfolioHistoryFromMap } from '@/utils/portfolioHistory';
+import PortfolioTable from '@/components/portfolio/PortfolioTable';
+import PieChart from '@/components/charts/PieChart';
+import LineChart from '@/components/charts/LineChart';
+import CandlestickChart from '@/components/charts/CandlestickChart';
+import AppSelect from '@/components/ui/AppSelect/AppSelect';
 
 /**
  * 한국 주식 포트폴리오 섹션

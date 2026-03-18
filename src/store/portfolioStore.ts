@@ -1,4 +1,4 @@
-import type { PortfolioStock, StockFormData, Market } from '../types/stock';
+import type { PortfolioStock, StockFormData, Market } from '@/types/stock';
 
 const STORAGE_KEY = 'stockfolio_portfolio';
 

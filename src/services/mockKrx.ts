@@ -1,4 +1,4 @@
-import type { KrxMockQuote, CandlestickData } from '../types/stock';
+import type { KrxMockQuote, CandlestickData } from '@/types/stock';
 
 /**
  * 한국 주요 종목 기준가 데이터

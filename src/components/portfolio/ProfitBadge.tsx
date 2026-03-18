@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { formatPercent } from '../../utils/formatter';
+import { formatPercent } from '@/utils/formatter';
 
 interface ProfitBadgeProps {
   value: number;

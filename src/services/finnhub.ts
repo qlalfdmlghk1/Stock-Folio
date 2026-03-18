@@ -1,5 +1,5 @@
-import { FINNHUB_API_KEY, FINNHUB_BASE_URL } from '../constants/api';
-import type { FinnhubQuote, FinnhubCandle, StockQuote, CandlestickData } from '../types/stock';
+import { FINNHUB_API_KEY, FINNHUB_BASE_URL } from '@/constants/api';
+import type { FinnhubQuote, FinnhubCandle, StockQuote, CandlestickData } from '@/types/stock';
 
 /**
  * 미국 종목의 Mock 일봉 데이터를 현재가 기반으로 생성한다.

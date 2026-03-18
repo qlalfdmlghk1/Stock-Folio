@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useStockCandles } from './useStockCandles';
-import type { CandlestickData, Market } from '../types/stock';
+import type { CandlestickData, Market } from '@/types/stock';
 
 /**
  * 여러 종목의 캔들 데이터를 동시에 조회하는 훅

@@ -1,6 +1,6 @@
 import React from 'react';
-import type { Market } from '../../types/stock';
-import { isKrxMarketOpen } from '../../services/mockKrx';
+import type { Market } from '@/types/stock';
+import { isKrxMarketOpen } from '@/services/mockKrx';
 
 /** 장 상태 표시 인디케이터 */
 function MarketStatusIndicator({ market }: { market: Market }) {

@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchAlphaVantageCandles } from '../services/alphaVantage';
-import { fetchQuote, generateUsMockCandles } from '../services/finnhub';
-import { generateKrxMockCandles } from '../services/mockKrx';
-import { DEFAULT_CANDLE_DAYS, CANDLE_STALE_TIME } from '../constants/api';
-import type { CandlestickData, Market } from '../types/stock';
+import { fetchAlphaVantageCandles } from '@/services/alphaVantage';
+import { fetchQuote, generateUsMockCandles } from '@/services/finnhub';
+import { generateKrxMockCandles } from '@/services/mockKrx';
+import { DEFAULT_CANDLE_DAYS, CANDLE_STALE_TIME } from '@/constants/api';
+import type { CandlestickData, Market } from '@/types/stock';
 
 /** 캔들 데이터 + 데이터 소스 정보 */
 export interface CandleResult {

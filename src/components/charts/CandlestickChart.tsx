@@ -1,7 +1,7 @@
 import { memo, useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
-import type { CandlestickData, Market } from '../../types/stock';
-import { formatCurrency } from '../../utils/formatter';
+import type { CandlestickData, Market } from '@/types/stock';
+import { formatCurrency } from '@/utils/formatter';
 
 interface CandlestickChartProps {
   /** OHLCV 데이터 배열 (날짜순 정렬) */

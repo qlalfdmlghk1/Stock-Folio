@@ -1,12 +1,12 @@
 import { useState, useCallback } from 'react';
-import type { PortfolioStock, StockFormData, Market } from '../types/stock';
+import type { PortfolioStock, StockFormData, Market } from '@/types/stock';
 import {
   loadPortfolio,
   addStock,
   updateStock,
   removeStock,
   getStocksByMarket,
-} from '../store/portfolioStore';
+} from '@/store/portfolioStore';
 
 /**
  * 포트폴리오 CRUD를 React 상태와 동기화하는 훅

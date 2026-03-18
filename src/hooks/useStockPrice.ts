@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchQuote } from '../services/finnhub';
-import { POLLING_INTERVAL } from '../constants/api';
+import { fetchQuote } from '@/services/finnhub';
+import { POLLING_INTERVAL } from '@/constants/api';
 
 /**
  * Finnhub REST API로 종목 현재가를 조회하는 훅

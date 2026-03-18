@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react';
-import type { PortfolioStock, StockFormData, Market } from '../../types/stock';
-import { getAvailableKrxSymbols } from '../../services/mockKrx';
-import { AppSelect } from '../ui/AppSelect';
-import type { SelectOption, SelectValue } from '../ui/AppSelect/AppSelect.type';
+import type { PortfolioStock, StockFormData, Market } from '@/types/stock';
+import { getAvailableKrxSymbols } from '@/services/mockKrx';
+import { AppSelect } from '@/components/ui/AppSelect';
+import type { SelectOption, SelectValue } from '@/components/ui/AppSelect/AppSelect.type';
 
 interface StockFormProps {
   market: Market;

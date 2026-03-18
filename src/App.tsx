@@ -1,11 +1,11 @@
 import { useState, useCallback } from 'react';
-import type { PortfolioStock, StockFormData, Market } from './types/stock';
-import { usePortfolio } from './hooks/usePortfolio';
-import StockForm from './components/portfolio/StockForm';
-import USPortfolioSection from './components/portfolio/USPortfolioSection';
-import KRPortfolioSection from './components/portfolio/KRPortfolioSection';
-import TabButton from './components/ui/TabButton';
-import MarketStatusIndicator from './components/ui/MarketStatusIndicator';
+import type { PortfolioStock, StockFormData, Market } from '@/types/stock';
+import { usePortfolio } from '@/hooks/usePortfolio';
+import StockForm from '@/components/portfolio/StockForm';
+import USPortfolioSection from '@/components/portfolio/USPortfolioSection';
+import KRPortfolioSection from '@/components/portfolio/KRPortfolioSection';
+import TabButton from '@/components/ui/TabButton';
+import MarketStatusIndicator from '@/components/ui/MarketStatusIndicator';
 
 function App() {
   const [activeMarket, setActiveMarket] = useState<Market>('US');

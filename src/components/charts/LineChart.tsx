@@ -1,7 +1,7 @@
 import { memo, useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
-import type { LineChartPoint, Market } from '../../types/stock';
-import { formatCurrency } from '../../utils/formatter';
+import type { LineChartPoint, Market } from '@/types/stock';
+import { formatCurrency } from '@/utils/formatter';
 
 interface LineChartProps {
   /** 기간별 손익 데이터 포인트 배열 */

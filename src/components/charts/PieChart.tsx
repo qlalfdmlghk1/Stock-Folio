@@ -1,7 +1,7 @@
 import { memo, useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
-import type { PieChartItem, Market } from '../../types/stock';
-import { formatCurrency } from '../../utils/formatter';
+import type { PieChartItem, Market } from '@/types/stock';
+import { formatCurrency } from '@/utils/formatter';
 
 interface PieChartProps {
   /** 종목별 평가금액 데이터 */

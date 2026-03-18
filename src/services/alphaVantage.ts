@@ -1,5 +1,5 @@
-import { ALPHA_VANTAGE_API_KEY, ALPHA_VANTAGE_BASE_URL } from '../constants/api';
-import type { CandlestickData } from '../types/stock';
+import { ALPHA_VANTAGE_API_KEY, ALPHA_VANTAGE_BASE_URL } from '@/constants/api';
+import type { CandlestickData } from '@/types/stock';
 
 /**
  * Alpha Vantage TIME_SERIES_DAILY 응답 타입

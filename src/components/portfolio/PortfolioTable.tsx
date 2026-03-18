@@ -1,13 +1,13 @@
 import { memo, useMemo } from 'react';
-import type { PortfolioStock, Market } from '../../types/stock';
-import { formatCurrency } from '../../utils/formatter';
+import type { PortfolioStock, Market } from '@/types/stock';
+import { formatCurrency } from '@/utils/formatter';
 import {
   calcReturnRate,
   calcProfitLoss,
   calcMarketValue,
   calcTotalCost,
   calcPortfolioReturnRate,
-} from '../../utils/calculator';
+} from '@/utils/calculator';
 import ProfitBadge from './ProfitBadge';
 
 interface PortfolioTableProps {

@@ -20,3 +20,10 @@ export const GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta
 
 /** 종목 요약 캐시 유지 시간 (ms) — 동향 요약은 10분간 유효 */
 export const SUMMARY_STALE_TIME = 10 * 60 * 1000;
+
+// 공공데이터포털 — 한국 주식 시세 정보
+export const KRX_API_KEY = import.meta.env.VITE_KRX_API_KEY as string;
+export const KRX_BASE_URL = 'https://apis.data.go.kr/1160100/service/GetStockSecuritiesInfoService';
+
+/** 한국 주식 시세 캐시 유지 시간 (ms) — 일별 데이터이므로 10분 */
+export const KRX_STALE_TIME = 10 * 60 * 1000;

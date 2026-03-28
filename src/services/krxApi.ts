@@ -24,27 +24,28 @@ export interface KrxSearchResult {
 export async function searchKrxStocks(keyword: string): Promise<KrxSearchResult[]> {
   if (!keyword.trim() || keyword.trim().length < 1) return [];
 
-  if (!KRX_API_KEY || KRX_API_KEY === '여기에_공공데이터포털_Decoding_인증키_입력') {
-    // API 키 없을 때 Mock 데이터에서 검색
+  // 개발 환경에서만 키 존재 여부 체크 (프로덕션은 서버리스 프록시가 키 관리)
+  if (import.meta.env.DEV && (!KRX_API_KEY || KRX_API_KEY === '여기에_공공데이터포털_Decoding_인증키_입력')) {
     return searchMockStocks(keyword);
   }
 
   try {
-    const params = new URLSearchParams({
-      serviceKey: KRX_API_KEY,
+    const baseParams: Record<string, string> = {
       numOfRows: '10',
       pageNo: '1',
       resultType: 'json',
       likeItmsNm: keyword.trim(),
-    });
+    };
+
+    // [의사결정] 프로덕션은 서버리스 프록시로 API 키 은닉
+    const url = import.meta.env.DEV
+      ? `${KRX_BASE_URL}/getStockPriceInfo?${new URLSearchParams({ serviceKey: KRX_API_KEY, ...baseParams })}`
+      : `/api/krx?${new URLSearchParams(baseParams)}`;
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5_000);
 
-    const response = await fetch(
-      `${KRX_BASE_URL}/getStockPriceInfo?${params.toString()}`,
-      { signal: controller.signal },
-    );
+    const response = await fetch(url, { signal: controller.signal });
     clearTimeout(timeoutId);
 
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -115,27 +116,27 @@ export interface KrxQuoteResult {
  * [의사결정] 실패 시 Mock fallback — 공공 API 장애/키 미활성화 시에도 앱 정상 동작
  */
 export async function fetchKrxQuote(symbol: string): Promise<KrxQuoteResult> {
-  if (!KRX_API_KEY || KRX_API_KEY === '여기에_공공데이터포털_Decoding_인증키_입력') {
+  if (import.meta.env.DEV && (!KRX_API_KEY || KRX_API_KEY === '여기에_공공데이터포털_Decoding_인증키_입력')) {
     return { quote: fetchKrxMockQuote(symbol), isRealData: false };
   }
 
   try {
-    const params = new URLSearchParams({
-      serviceKey: KRX_API_KEY,
+    const baseParams: Record<string, string> = {
       numOfRows: '1',
       pageNo: '1',
       resultType: 'json',
       likeSrtnCd: symbol,
       basDt: getLastTradingDate(),
-    });
+    };
+
+    const url = import.meta.env.DEV
+      ? `${KRX_BASE_URL}/getStockPriceInfo?${new URLSearchParams({ serviceKey: KRX_API_KEY, ...baseParams })}`
+      : `/api/krx?${new URLSearchParams(baseParams)}`;
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10_000);
 
-    const response = await fetch(
-      `${KRX_BASE_URL}/getStockPriceInfo?${params.toString()}`,
-      { signal: controller.signal },
-    );
+    const response = await fetch(url, { signal: controller.signal });
     clearTimeout(timeoutId);
 
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -173,22 +174,22 @@ async function fetchKrxQuoteWithRetry(symbol: string, daysBack: number): Promise
     if (day === 0) kst.setDate(kst.getDate() - 2);
     else if (day === 6) kst.setDate(kst.getDate() - 1);
 
-    const params = new URLSearchParams({
-      serviceKey: KRX_API_KEY,
+    const baseParams: Record<string, string> = {
       numOfRows: '1',
       pageNo: '1',
       resultType: 'json',
       likeSrtnCd: symbol,
       basDt: formatDate(kst),
-    });
+    };
+
+    const retryUrl = import.meta.env.DEV
+      ? `${KRX_BASE_URL}/getStockPriceInfo?${new URLSearchParams({ serviceKey: KRX_API_KEY, ...baseParams })}`
+      : `/api/krx?${new URLSearchParams(baseParams)}`;
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10_000);
 
-    const response = await fetch(
-      `${KRX_BASE_URL}/getStockPriceInfo?${params.toString()}`,
-      { signal: controller.signal },
-    );
+    const response = await fetch(retryUrl, { signal: controller.signal });
     clearTimeout(timeoutId);
 
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -212,7 +213,7 @@ async function fetchKrxQuoteWithRetry(symbol: string, daysBack: number): Promise
  * [의사결정] 실패 시 Mock 캔들로 fallback
  */
 export async function fetchKrxCandles(symbol: string, days: number): Promise<{ candles: CandlestickData[]; isRealData: boolean }> {
-  if (!KRX_API_KEY || KRX_API_KEY === '여기에_공공데이터포털_Decoding_인증키_입력') {
+  if (import.meta.env.DEV && (!KRX_API_KEY || KRX_API_KEY === '여기에_공공데이터포털_Decoding_인증키_입력')) {
     return { candles: generateKrxMockCandles(symbol, days), isRealData: false };
   }
 
@@ -223,23 +224,23 @@ export async function fetchKrxCandles(symbol: string, days: number): Promise<{ c
     const startDate = new Date(kstEnd);
     startDate.setDate(startDate.getDate() - Math.ceil(days * 1.5));
 
-    const params = new URLSearchParams({
-      serviceKey: KRX_API_KEY,
+    const baseParams: Record<string, string> = {
       numOfRows: String(days),
       pageNo: '1',
       resultType: 'json',
       likeSrtnCd: symbol,
       beginBasDt: formatDate(startDate),
       endBasDt: formatDate(kstEnd),
-    });
+    };
+
+    const candleUrl = import.meta.env.DEV
+      ? `${KRX_BASE_URL}/getStockPriceInfo?${new URLSearchParams({ serviceKey: KRX_API_KEY, ...baseParams })}`
+      : `/api/krx?${new URLSearchParams(baseParams)}`;
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15_000);
 
-    const response = await fetch(
-      `${KRX_BASE_URL}/getStockPriceInfo?${params.toString()}`,
-      { signal: controller.signal },
-    );
+    const response = await fetch(candleUrl, { signal: controller.signal });
     clearTimeout(timeoutId);
 
     if (!response.ok) throw new Error(`HTTP ${response.status}`);

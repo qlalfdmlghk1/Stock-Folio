@@ -27,7 +27,10 @@ export async function fetchAlphaVantageCandles(
   symbol: string,
   days: number,
 ): Promise<CandlestickData[]> {
-  const url = `${ALPHA_VANTAGE_BASE_URL}?function=TIME_SERIES_DAILY&symbol=${encodeURIComponent(symbol)}&outputsize=compact&apikey=${ALPHA_VANTAGE_API_KEY}`;
+  // [의사결정] 프로덕션은 서버리스 프록시로 API 키 은닉, 개발 환경은 직접 호출
+  const url = import.meta.env.DEV
+    ? `${ALPHA_VANTAGE_BASE_URL}?function=TIME_SERIES_DAILY&symbol=${encodeURIComponent(symbol)}&outputsize=compact&apikey=${ALPHA_VANTAGE_API_KEY}`
+    : `/api/alpha-vantage?function=TIME_SERIES_DAILY&symbol=${encodeURIComponent(symbol)}&outputsize=compact`;
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10_000);

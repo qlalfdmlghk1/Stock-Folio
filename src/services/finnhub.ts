@@ -67,7 +67,10 @@ export function generateUsMockCandles(
  * [의사결정] WebSocket 단절 시 폴링 백업으로도 사용되므로 독립 함수로 분리
  */
 export async function fetchQuote(symbol: string): Promise<StockQuote> {
-  const url = `${FINNHUB_BASE_URL}/quote?symbol=${encodeURIComponent(symbol)}&token=${FINNHUB_API_KEY}`;
+  // [의사결정] 프로덕션은 서버리스 프록시로 API 키 은닉, 개발 환경은 직접 호출
+  const url = import.meta.env.DEV
+    ? `${FINNHUB_BASE_URL}/quote?symbol=${encodeURIComponent(symbol)}&token=${FINNHUB_API_KEY}`
+    : `/api/finnhub?path=quote&symbol=${encodeURIComponent(symbol)}`;
 
   // [의사결정] AbortController로 10초 타임아웃 — 무한 대기 방지
   const controller = new AbortController();
@@ -119,7 +122,10 @@ export async function fetchCandles(
   from: number,
   to: number,
 ): Promise<CandlestickData[]> {
-  const url = `${FINNHUB_BASE_URL}/stock/candle?symbol=${encodeURIComponent(symbol)}&resolution=D&from=${from}&to=${to}&token=${FINNHUB_API_KEY}`;
+  // [의사결정] 프로덕션은 서버리스 프록시로 API 키 은닉
+  const url = import.meta.env.DEV
+    ? `${FINNHUB_BASE_URL}/stock/candle?symbol=${encodeURIComponent(symbol)}&resolution=D&from=${from}&to=${to}&token=${FINNHUB_API_KEY}`
+    : `/api/finnhub?path=stock/candle&symbol=${encodeURIComponent(symbol)}&resolution=D&from=${from}&to=${to}`;
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10_000);

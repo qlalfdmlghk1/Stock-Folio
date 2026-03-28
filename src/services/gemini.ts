@@ -30,7 +30,8 @@ export async function fetchStockSummary(
   name: string,
   market: 'US' | 'KR'
 ): Promise<string> {
-  if (!GEMINI_API_KEY) {
+  // 개발 환경에서만 키 존재 여부 체크 (프로덕션은 서버리스 프록시가 키 관리)
+  if (import.meta.env.DEV && !GEMINI_API_KEY) {
     throw new Error('VITE_GEMINI_API_KEY 환경변수가 설정되지 않았습니다.');
   }
 
@@ -44,8 +45,13 @@ export async function fetchStockSummary(
   const timeoutId = setTimeout(() => controller.abort(), 15000);
 
   try {
+    // [의사결정] 프로덕션은 서버리스 프록시로 API 키 은닉
+    const apiUrl = import.meta.env.DEV
+      ? `${GEMINI_BASE_URL}/models/gemini-2.5-flash-lite:generateContent?key=${GEMINI_API_KEY}`
+      : '/api/gemini';
+
     const response = await fetch(
-      `${GEMINI_BASE_URL}/models/gemini-2.5-flash-lite:generateContent?key=${GEMINI_API_KEY}`,
+      apiUrl,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

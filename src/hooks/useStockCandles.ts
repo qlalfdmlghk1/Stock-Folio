@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { fetchAlphaVantageCandles } from '@/services/alphaVantage';
 import { fetchQuote, generateUsMockCandles } from '@/services/finnhub';
-import { generateKrxMockCandles } from '@/services/mockKrx';
+import { fetchKrxCandles } from '@/services/krxApi';
 import { DEFAULT_CANDLE_DAYS, CANDLE_STALE_TIME } from '@/constants/api';
 import type { CandlestickData, Market } from '@/types/stock';
 
@@ -16,7 +16,7 @@ export interface CandleResult {
  * 종목의 일봉(OHLCV) 데이터를 조회하는 훅
  * [의사결정] 미국 주식 일봉: Alpha Vantage 1순위 → Mock fallback 2순위
  * [트러블슈팅] Finnhub /stock/candle 프리미엄 전용 전환(403) → Alpha Vantage로 대체
- * [의사결정] 한국 주식은 KRX API 불가 → Mock 시뮬레이션 유지
+ * [의사결정] 한국 주식: 공공데이터포털 1순위 → Mock fallback 2순위
  * [의사결정] staleTime 5분 — 일봉 데이터는 장중에도 자주 변하지 않으므로 불필요한 재요청 방지
  */
 export function useStockCandles(
@@ -28,7 +28,8 @@ export function useStockCandles(
     queryKey: ['candles', symbol, market, days],
     queryFn: async () => {
       if (market === 'KR') {
-        return { candles: generateKrxMockCandles(symbol, days), isRealData: false };
+        // [의사결정] 공공데이터포털 API로 실제 과거 시세 조회, 실패 시 내부적으로 Mock fallback
+        return fetchKrxCandles(symbol, days);
       }
 
       // 1순위: Alpha Vantage (실제 과거 일봉 데이터)

@@ -1,6 +1,9 @@
 import { useState, useMemo } from 'react';
 import type { PortfolioStock, PieChartItem, LineChartPoint, CandlestickData } from '@/types/stock';
-import { fetchKrxMockQuote, isKrxMarketOpen, generateKrxMockCandles } from '@/services/mockKrx';
+import { isKrxMarketOpen } from '@/services/mockKrx';
+import { useKrxStockPrice } from '@/hooks/useKrxStockPrice';
+import { useStockCandles } from '@/hooks/useStockCandles';
+import { useMultipleCandles } from '@/hooks/useMultipleCandles';
 import { calcMarketValue } from '@/utils/calculator';
 import { buildPortfolioHistoryFromMap } from '@/utils/portfolioHistory';
 import PortfolioTable from '@/components/portfolio/PortfolioTable';
@@ -13,7 +16,7 @@ import StockSummary from '@/components/ui/StockSummary';
 
 /**
  * 한국 주식 포트폴리오 섹션
- * [의사결정] KRX Mock 데이터 사용 — 장중 시간에만 시뮬레이션 활성화
+ * [의사결정] 공공데이터포털 API로 실제 시세 조회 — API 실패 시 Mock fallback
  * [의사결정] 차트 3종 통합 — 파이(비중) + 라인(손익 추이) + 캔들스틱(종목 클릭 시)
  */
 export default function KRPortfolioSection({
@@ -27,16 +30,39 @@ export default function KRPortfolioSection({
 }) {
   const [selectedSymbol, setSelectedSymbol] = useState<string>('');
 
+  // [의사결정] 최대 10개 종목까지 개별 쿼리로 시세 조회 (TanStack Query 캐시 관리)
+  const limited = stocks.slice(0, 10);
+  const q0 = useKrxStockPrice(limited[0]?.symbol ?? '');
+  const q1 = useKrxStockPrice(limited[1]?.symbol ?? '');
+  const q2 = useKrxStockPrice(limited[2]?.symbol ?? '');
+  const q3 = useKrxStockPrice(limited[3]?.symbol ?? '');
+  const q4 = useKrxStockPrice(limited[4]?.symbol ?? '');
+  const q5 = useKrxStockPrice(limited[5]?.symbol ?? '');
+  const q6 = useKrxStockPrice(limited[6]?.symbol ?? '');
+  const q7 = useKrxStockPrice(limited[7]?.symbol ?? '');
+  const q8 = useKrxStockPrice(limited[8]?.symbol ?? '');
+  const q9 = useKrxStockPrice(limited[9]?.symbol ?? '');
+  const queries = [q0, q1, q2, q3, q4, q5, q6, q7, q8, q9];
+
+  // 시세 데이터가 Mock인지 실제 API인지 판별
+  const isMockData = useMemo(() => {
+    const loadedQueries = limited.map((_, i) => queries[i]?.data).filter(Boolean);
+    if (loadedQueries.length === 0) return false;
+    return loadedQueries.some((result) => !result?.isRealData);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [limited.map((s) => s.symbol).join(','), ...queries.map((q) => q.data?.isRealData)]);
+
   const priceMap = useMemo(() => {
     const map: Record<string, number> = {};
-    stocks.forEach((stock) => {
-      const quote = fetchKrxMockQuote(stock.symbol);
+    limited.forEach((stock, i) => {
+      const quote = queries[i]?.data?.quote;
       if (quote) {
         map[stock.symbol] = quote.currentPrice;
       }
     });
     return map;
-  }, [stocks]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [limited.map((s) => s.symbol).join(','), ...queries.map((q) => q.data?.quote?.currentPrice)]);
 
   // 파이차트 데이터
   const pieData = useMemo<PieChartItem[]>(() => {
@@ -49,20 +75,17 @@ export default function KRPortfolioSection({
       }));
   }, [stocks, priceMap]);
 
-  // 캔들스틱 — Mock 캔들 데이터
+  // 캔들스틱 — 공공데이터포털 API (실패 시 Mock fallback)
+  const { data: candleResult } = useStockCandles(selectedSymbol, 'KR');
   const candleData = useMemo<CandlestickData[]>(() => {
-    if (!selectedSymbol) return [];
-    return generateKrxMockCandles(selectedSymbol, 90);
-  }, [selectedSymbol]);
+    return candleResult?.candles ?? [];
+  }, [candleResult]);
 
-  // 라인차트 — Mock 캔들로 손익 역산
-  const allCandleData = useMemo(() => {
-    const map: Record<string, CandlestickData[]> = {};
-    stocks.forEach((s) => {
-      map[s.symbol] = generateKrxMockCandles(s.symbol, 90);
-    });
-    return map;
-  }, [stocks]);
+  // 라인차트 — 전체 종목 캔들로 손익 역산
+  const allCandleData = useMultipleCandles(
+    stocks.map((s) => s.symbol),
+    'KR',
+  );
 
   const lineData = useMemo<LineChartPoint[]>(() => {
     return buildPortfolioHistoryFromMap(stocks, allCandleData);
@@ -75,6 +98,11 @@ export default function KRPortfolioSection({
       {!isKrxMarketOpen() && stocks.length > 0 && (
         <div className="mb-4 rounded-lg border border-yellow-800/50 bg-yellow-950/30 px-4 py-2.5 text-sm text-yellow-400">
           한국 장 마감 상태입니다. 기준가가 표시됩니다.
+        </div>
+      )}
+      {isMockData && stocks.length > 0 && (
+        <div className="mb-4 rounded-lg border border-orange-800/50 bg-orange-950/30 px-4 py-2.5 text-sm text-orange-400">
+          현재 Mock 데이터입니다. 실제 값과 다를 수 있습니다.
         </div>
       )}
       <PortfolioTable

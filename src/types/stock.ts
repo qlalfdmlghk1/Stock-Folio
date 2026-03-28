@@ -85,6 +85,61 @@ export interface CandlestickData {
   volume: number;
 }
 
+/**
+ * 공공데이터포털 금융위원회_주식시세정보 API 응답 항목
+ * [의사결정] KRX 실시간 API 불가 → 공공데이터포털 일별 시세 데이터로 대체
+ */
+export interface KrxApiItem {
+  /** 기준일자 (YYYYMMDD) */
+  basDt: string;
+  /** 단축코드 (종목코드, 예: 005930) */
+  srtnCd: string;
+  /** ISIN 코드 */
+  isinCd: string;
+  /** 종목명 */
+  itmsNm: string;
+  /** 시장구분 (KOSPI / KOSDAQ) */
+  mrktCtg: string;
+  /** 종가 */
+  clpr: string;
+  /** 대비 (전일 대비 변동) */
+  vs: string;
+  /** 등락률 */
+  fltRt: string;
+  /** 시가 */
+  mkp: string;
+  /** 고가 */
+  hipr: string;
+  /** 저가 */
+  lopr: string;
+  /** 거래량 */
+  trqu: string;
+  /** 거래대금 */
+  trPrc: string;
+  /** 상장주식수 */
+  lstgStCnt: string;
+  /** 시가총액 */
+  mrktTotAmt: string;
+}
+
+/** 공공데이터포털 API 전체 응답 구조 */
+export interface KrxApiResponse {
+  response: {
+    header: {
+      resultCode: string;
+      resultMsg: string;
+    };
+    body: {
+      numOfRows: number;
+      pageNo: number;
+      totalCount: number;
+      items: {
+        item: KrxApiItem[];
+      };
+    };
+  };
+}
+
 /** Finnhub /stock/candle 응답 타입 */
 export interface FinnhubCandle {
   /** 종가 배열 */

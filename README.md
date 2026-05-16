@@ -1,98 +1,204 @@
-# StockFolio — 실시간 주식 포트폴리오 트래커
+# StockFolio
 
-미국 주식 실시간 시세 조회와 포트폴리오 수익률 추적을 제공하는 프론트엔드 애플리케이션입니다.
+> 실시간 주식 포트폴리오 트래커 — Finnhub WebSocket 기반 실시간 시세 + 가상 보유 종목 수익률 시뮬레이션
 
-> 한국 주식은 KRX 데이터 정책 제한으로 KIS API 연동 구조로 설계하되, 데모 환경에서는 장중 시간 기반 Mock 시뮬레이션으로 운영합니다.
+<!-- TODO: 메인 화면 스크린샷 또는 데모 GIF 추가 -->
+
+- **데모 URL**: <!-- TODO: Vercel 배포 후 URL 삽입 -->
+- **타겟**: 금융권 IT 직군 포트폴리오 (NH투자증권, IBK기업은행)
+- **구조**: 프론트엔드 전용 + Vercel Serverless Proxy (API 키 서버사이드 은닉)
+
+---
+
+## 핵심 특징
+
+| 항목 | 설명 |
+|------|------|
+| 실시간 시세 | Finnhub WebSocket으로 미국 주식 체결가 수신 (API 한도 비차감) |
+| 폴링 백업 | WebSocket 단절 감지 시 REST 폴링(5초)으로 자동 전환 |
+| 한국 주식 | 공공데이터포털 KRX API + 장중 시간 기반 Mock fallback |
+| API 키 보안 | Vercel Serverless Function 프록시로 키를 서버사이드 격리 |
+| 시각화 | ECharts 파이 / 라인 / 캔들스틱 3종 차트 |
+| 안정성 | Error Boundary, 오프라인 배너, 장 마감 UI 등 예외 처리 |
+
+---
+
+## 기술 스택 및 의사결정
+
+| 구분 | 채택 기술 | 대안 | 채택 근거 |
+|------|-----------|------|-----------|
+| 프레임워크 | React 19 + TypeScript | — | 타입 안정성 + 생태계 |
+| 서버 상태 | TanStack Query v5 | useEffect + fetch | 캐싱·폴링 주기 제어·자동 재시도 |
+| 시각화 | **ECharts** | Recharts, Chart.js | 캔들스틱 기본 지원 + 금융권 실무 사용 |
+| 실시간 통신 | Finnhub WebSocket | REST 폴링 단독 | WebSocket은 API 한도(분당 60회) 비차감 |
+| 시세 데이터 | **Finnhub** | Alpha Vantage | 일 25회 vs 분당 60회 — 폴링 운영 가능 여부 차이 |
+| 한국 시세 | 공공데이터포털 KRX | KIS Open API | KIS는 개인 계좌 + 인증 필요 → 공개 데모 불가 |
+| 스타일링 | Tailwind CSS v4 | SCSS modules | 유틸리티 클래스 + 빠른 프로토타이핑 |
+| 빌드 | Vite | Webpack/CRA | HMR 속도 + ESM 네이티브 |
+| 배포 | Vercel | Netlify | Serverless Function 통합으로 API 키 프록시 구현 |
+
+> 의사결정의 전체 근거(트레이드오프 비교표 포함)는 [`.claude/CLAUDE.md`](./.claude/CLAUDE.md) 참고.
+
+---
+
+## 아키텍처 한눈에 보기
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Browser (React App)                                        │
+│  ┌────────────────┐  ┌────────────────┐  ┌──────────────┐  │
+│  │ Portfolio CRUD │  │  ECharts 3종   │  │ Error UX     │  │
+│  │ (localStorage) │  │  (memo+useMemo)│  │ (Boundary 외)│  │
+│  └────────────────┘  └────────────────┘  └──────────────┘  │
+│           │                  │                              │
+│           └────────┬─────────┘                              │
+│                    ▼                                        │
+│       ┌──────────────────────────┐                          │
+│       │ TanStack Query + WS Hook │                          │
+│       └──────────────────────────┘                          │
+└────────────┬────────────────────┬───────────────────────────┘
+             │ REST (DEV: 직접)   │ WebSocket (직접 연결)
+             │ REST (PROD: /api)  ▼
+             ▼              wss://ws.finnhub.io
+   ┌────────────────────┐
+   │ Vercel Serverless  │
+   │ /api/finnhub       │
+   │ /api/alpha-vantage │
+   │ /api/krx           │
+   │ /api/gemini        │
+   └─────────┬──────────┘
+             │ API 키 주입 (process.env)
+             ▼
+   External APIs (Finnhub / Alpha Vantage / 공공데이터포털 / Gemini)
+```
+
+---
 
 ## 주요 기능
 
-- **실시간 시세 조회** — Finnhub WebSocket으로 미국 주식 실시간 체결가 수신
-- **WebSocket + REST 폴링 이중화** — WebSocket 단절 시 REST 폴링(5초 주기)으로 자동 전환
-- **포트폴리오 관리** — 보유 종목 추가/수정/삭제 (localStorage 기반)
-- **수익률 분석** — 종목별·전체 수익률, 평가손익 실시간 계산
-- **차트 시각화** — 캔들스틱, 파이, 라인 차트 (ECharts)
-- **장중/장외 자동 감지** — 시장 상태에 따른 UI 분기 처리
+### 1. 포트폴리오 대시보드
+- 미국 / 한국 주식 탭 분리
+- 종목 등록·수정·삭제 (localStorage 영속)
+- 수익률·평가손익 자동 계산 (한국식 색상: 수익 빨강, 손실 파랑)
 
-## 기술 스택
+<!-- TODO: 포트폴리오 테이블 + 수익률 표시 스크린샷 -->
 
-| 구분 | 기술 |
-|------|------|
-| 프레임워크 | React 18 + TypeScript |
-| 상태 관리 | TanStack Query v5 |
-| 데이터 시각화 | Apache ECharts |
-| 실시간 통신 | Finnhub WebSocket + REST 폴링 백업 |
-| 스타일링 | Tailwind CSS |
-| 빌드 도구 | Vite |
-| 배포 | Vercel |
+### 2. 실시간 시세 갱신
+- 앱 실행 → Finnhub WebSocket 연결 → 종목 전체 구독
+- WebSocket 단절 감지 → REST 폴링(5초)으로 자동 전환
+- 재연결 성공 시 WebSocket 복귀 + 구독 복구
 
-## 기술적 의사결정
+<!-- TODO: 실시간 가격 갱신 GIF -->
 
-### Finnhub API 선택 (vs Alpha Vantage)
+### 3. ECharts 차트 3종
+- **파이**: 종목별 비중
+- **라인**: 기간별 손익 추이
+- **캔들스틱**: 개별 종목 OHLCV
 
-Alpha Vantage 무료 플랜은 일 25회 호출 제한으로 5초 폴링 구현이 불가능합니다. Finnhub은 분당 60회 호출 + WebSocket 무제한 수신을 지원하여 실시간 데모 운영에 적합합니다.
+<!-- TODO: 차트 3종 스크린샷 -->
 
-### ECharts 선택 (vs Recharts, Chart.js)
+### 4. 예외 처리 UX
+- WebSocket 단절 자동 재연결 + 폴링 백업
+- 네트워크 오프라인 배너
+- 장 마감 상태 UI
+- Error Boundary로 차트/데이터 에러 격리
 
-캔들스틱 차트를 기본 지원하는 유일한 선택지이며, 금융권 실무에서 널리 사용되는 라이브러리입니다.
+<!-- TODO: 오프라인 배너 / 장 마감 UI 스크린샷 -->
 
-### WebSocket + 폴링 이중화 구조
+---
 
-WebSocket만 단독 사용 시 방화벽/프록시 환경에서 차단될 수 있습니다. REST 폴링을 백업으로 두어 어떤 네트워크 환경에서도 시세 갱신이 끊기지 않도록 설계했습니다.
+## 기술 어필 포인트 (상세 문서)
 
+### Tech-Point — 설계·최적화 의사결정
+
+| 주제 | 한 줄 요약 |
+|------|-----------|
+| [API Rate Limit 대응](./docs/tech-point/api-rate-limit-multi-stock-query.md) | Finnhub 분당 60회 한도 내에서 다종목 5초 폴링 운영 |
+| [데이터 소스 추상화 (priceMap)](./docs/tech-point/data-source-abstraction-pricemap.md) | Finnhub와 KRX Mock을 `Record<string, number>` 하나로 통합 |
+| [ECharts 성능 최적화](./docs/tech-point/echarts-memo-usememo-optimization.md) | React.memo + useMemo로 차트 리렌더링 80% 감소 |
+| [localStorage 2계층 아키텍처](./docs/tech-point/localstorage-two-layer-architecture.md) | 저장소/동기화 계층 분리로 교체 비용 최소화 |
+
+### Trouble-Shooting — 실제 발생 문제 + 해결
+
+| 주제 | 한 줄 요약 |
+|------|-----------|
+| [Vite VITE_ 키 브라우저 노출](./docs/trouble-shooting/vite-api-key-browser-exposure.md) | Vercel Serverless Proxy로 API 키 서버사이드 격리 |
+| [Finnhub Candle API 403](./docs/trouble-shooting/finnhub-candle-api-403.md) | 무료 플랜 변경 대응 → Alpha Vantage + Mock 이중 fallback |
+
+### Features — 기능 상세 명세
+
+- [포트폴리오 CRUD + 수익률 계산](./docs/features/portfolio-crud-calculation.md)
+- [미국/한국 탭 + 실시간 시세 연동](./docs/features/market-tab-realtime-price.md)
+- [Finnhub REST API 시세 조회](./docs/features/finnhub-rest-api-quote.md)
+- [WebSocket 실시간 시세 + 폴링 백업](./docs/features/websocket-realtime-price.md)
+- [한국 주식 Mock 시뮬레이션](./docs/features/krx-mock-simulation.md)
+- [ECharts 데이터 시각화](./docs/features/echarts-data-visualization.md)
+
+---
+
+## 로컬 실행
+
+### 환경변수
+
+루트에 `.env` 파일을 만들고 다음 키를 설정합니다.
+
+```env
+# 클라이언트 노출 (WebSocket 전용 — 분당 60회 제한으로 남용 위험 낮음)
+VITE_FINNHUB_API_KEY=your_finnhub_key
+
+# 서버 전용 (Vercel 환경변수 또는 로컬 .env)
+FINNHUB_API_KEY=your_finnhub_key
+ALPHA_VANTAGE_API_KEY=your_alpha_vantage_key
+KRX_API_KEY=your_krx_public_data_key
+GEMINI_API_KEY=your_gemini_key
 ```
-WebSocket 연결 실패 또는 단절
-        ↓
-자동으로 REST 폴링 (5초 주기)으로 전환
-        ↓
-WebSocket 재연결 성공 시 다시 WebSocket으로 전환
-```
 
-## 시작하기
+> 키 분리 전략의 근거: [vite-api-key-browser-exposure.md](./docs/trouble-shooting/vite-api-key-browser-exposure.md)
 
-### 사전 요구사항
-
-- Node.js 18+
-- [Finnhub API Key](https://finnhub.io/) (무료)
-
-### 설치 및 실행
+### 실행
 
 ```bash
-# 의존성 설치
 npm install
-
-# 환경변수 설정
-cp .env.example .env
-# .env 파일에 VITE_FINNHUB_API_KEY 입력
-
-# 개발 서버 실행
-npm run dev
-```
-
-### 스크립트
-
-```bash
-npm run dev       # 개발 서버
+npm run dev       # 개발 서버 (Vite, 외부 API 직접 호출)
 npm run build     # 프로덕션 빌드
 npm run preview   # 빌드 결과 미리보기
-npm run lint      # ESLint 검사
+npm run lint      # ESLint
 ```
 
-## 프로젝트 구조
+> 프로덕션 빌드 시 `import.meta.env.DEV` 분기로 자동으로 `/api/*` Serverless 프록시 경로를 사용합니다.
+
+---
+
+## 디렉토리 구조
 
 ```
-src/
-├── components/
-│   ├── charts/          # ECharts 차트 (캔들스틱, 파이, 라인)
-│   ├── portfolio/       # 포트폴리오 테이블, 종목 추가 폼
-│   └── ui/              # 공통 UI (에러 바운더리, 상태 배너)
-├── hooks/               # 커스텀 훅 (시세 조회, WebSocket, 장 상태)
-├── services/            # API 호출, Mock 데이터 생성
-├── store/               # localStorage 상태 관리
-├── types/               # 공통 타입 정의
-├── utils/               # 수익률 계산, 포맷 유틸
-└── constants/           # API 엔드포인트, 설정값
+.
+├── api/                      # Vercel Serverless Functions (API 키 프록시)
+│   ├── finnhub.ts
+│   ├── alpha-vantage.ts
+│   ├── krx.ts
+│   └── gemini.ts
+├── src/
+│   ├── components/
+│   │   ├── charts/           # ECharts 컴포넌트 (Candlestick/Pie/Line)
+│   │   ├── portfolio/        # 시장별 섹션·폼·테이블
+│   │   └── ui/               # 공통 UI + Error Boundary
+│   ├── hooks/                # TanStack Query / WebSocket / 장 상태 등
+│   ├── services/             # 외부 API 호출 (DEV/PROD URL 분기)
+│   ├── store/                # localStorage 어댑터
+│   ├── utils/                # 수익률/포맷 등 순수 함수
+│   ├── types/
+│   └── constants/
+└── docs/
+    ├── features/             # 기능 명세
+    ├── tech-point/           # 설계 의사결정
+    └── trouble-shooting/     # 트러블슈팅 기록
 ```
 
-## 라이선스
+---
 
-MIT
+## 라이선스 / 면책
+
+- 본 프로젝트는 학습·포트폴리오 목적의 데모입니다.
+- 표시되는 시세는 정보 제공용이며, 실제 투자 판단에 사용할 수 없습니다.
+- 한국 주식은 KRX 데이터 정책상 실시간 체결가 대신 공공데이터포털 일별 데이터 또는 Mock 시뮬레이션을 사용합니다.
